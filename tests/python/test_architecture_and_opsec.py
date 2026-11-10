@@ -190,3 +190,36 @@ def test_github_actions_workflow_and_node24_configured() -> None:
     )
     assert res.returncode == 0, f"[OPSEC] .antigravity must be ignored by git: {res.stderr}"
 
+
+def test_living_adrs_and_runbooks_integrity() -> None:
+    """Verify ADRs and operational runbooks meet LOC depth, Mermaid, and table standards."""
+    adrs = [
+        "docs/adr/0001-clean-architecture-and-asymmetric-loc-governance.md",
+        "docs/adr/0002-dual-contract-pydantic-rust-and-vectorized-gx-invariants.md",
+        "docs/adr/0003-s3-minio-parquet-zstd-and-forensic-quarantine-lake.md",
+        "docs/adr/0004-polars-rust-lazy-streaming-and-factorial-nav-attribution.md",
+    ]
+    for rel_path in adrs:
+        path = REPO_ROOT / rel_path
+        assert path.is_file(), f"[CRITICAL] Missing ADR: {rel_path}"
+        text = path.read_text(encoding="utf-8")
+        assert len(text.splitlines()) >= 100, f"[CRITICAL] ADR < 100 LOC: {rel_path}"
+        assert "```mermaid" in text, f"[CRITICAL] Missing Mermaid diagram in {rel_path}"
+
+    runbooks = [
+        "docs/runbooks/01-origin-data-contracts-isin-and-client-schema-onboarding.md",
+        "docs/runbooks/02-declarative-gx-invariants-and-circuit-breaker-triage.md",
+        "docs/runbooks/03-s3-quarantine-forensics-and-parquet-recovery.md",
+        "docs/runbooks/04-polars-nav-break-triage-and-factorial-attribution.md",
+    ]
+    for rel_path in runbooks:
+        path = REPO_ROOT / rel_path
+        assert path.is_file(), f"[CRITICAL] Missing Runbook: {rel_path}"
+        text = path.read_text(encoding="utf-8")
+        assert len(text.splitlines()) >= 160, f"[CRITICAL] Runbook < 160 LOC: {rel_path}"
+        assert "```mermaid" in text, f"[CRITICAL] Missing Mermaid diagram in {rel_path}"
+        assert "| :--- |" in text, f"[CRITICAL] Missing Markdown table in {rel_path}"
+
+
+
+
