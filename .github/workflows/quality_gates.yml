@@ -1,0 +1,107 @@
+name: "ASSET-PIPE 4 Quality Gates CI"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  gate-1:
+    name: "Gate 1 — Architecture, OPSEC, Zero-Emoji & Ruff Linter"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Ruff Linter
+        run: ruff check .
+
+      - name: Run Architecture & OPSEC Suite
+        run: pytest tests/python/test_architecture_and_opsec.py -v
+
+  gate-2:
+    name: "Gate 2 — Domain Entities, ISIN ISO-6166 & Data Contracts Suite"
+    needs: gate-1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Domain & Contracts Suite
+        run: |
+          pytest tests/python/test_domain_entities_and_isin.py -v
+          for contract_test in tests/python/test_contracts*.py; do
+            [ -f "$contract_test" ] && pytest tests/python/test_contracts*.py -v && break
+          done
+
+  gate-3:
+    name: "Gate 3 — Polars Vectorized Engine, S3 Parquet & Dual Warehouse FinOps Suite"
+    needs: gate-2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Full Python Test Suite
+        run: pytest tests/python/ -v
+
+  gate-4:
+    name: "Gate 4 — TypeScript Strict Check & Vitest Executive Console Integrity"
+    needs: gate-3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run Web Console Typecheck & Vitest
+        run: |
+          has_ts_files=$(find src/interfaces/web -name '*.ts' 2>/dev/null | head -n 1)
+          if [ -n "$has_ts_files" ] || [ -d "tests/web" ]; then
+            npm ci || npm install
+            npm run typecheck
+            npm test
+          else
+            echo "[OK] No TypeScript web interfaces or web tests found; Gate 4 passed."
+          fi

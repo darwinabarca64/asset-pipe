@@ -8,6 +8,7 @@ asymmetric 250-LOC modularity ceiling.
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -170,3 +171,22 @@ def test_asymmetric_loc_limit() -> None:
             rel = path.relative_to(REPO_ROOT).as_posix()
             violations.append(f"{rel} ({line_count} LOC > {MAX_STANDARD_LOC})")
     assert not violations, f"[CRITICAL] Asymmetric LOC ceiling exceeded: {violations}"
+
+
+def test_github_actions_workflow_and_node24_configured() -> None:
+    """Verify quality gates workflow, Node 24 runtime, 4 gates, and .antigravity OPSEC ignore."""
+    wf_path = REPO_ROOT / ".github" / "workflows" / "quality_gates.yml"
+    assert wf_path.is_file(), "[CRITICAL] quality_gates.yml workflow is missing"
+    content = wf_path.read_text(encoding="utf-8")
+    assert 'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"' in content, "[OPSEC] Node 24 env missing"
+    for gate in ("Gate 1", "Gate 2", "Gate 3", "Gate 4"):
+        assert gate in content, f"[CRITICAL] Missing {gate} definition in quality_gates.yml"
+    res = subprocess.run(
+        ["git", "check-ignore", ".antigravity"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert res.returncode == 0, f"[OPSEC] .antigravity must be ignored by git: {res.stderr}"
+
