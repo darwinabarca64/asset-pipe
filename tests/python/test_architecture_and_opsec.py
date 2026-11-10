@@ -198,6 +198,11 @@ def test_living_adrs_and_runbooks_integrity() -> None:
         "docs/adr/0002-dual-contract-pydantic-rust-and-vectorized-gx-invariants.md",
         "docs/adr/0003-s3-minio-parquet-zstd-and-forensic-quarantine-lake.md",
         "docs/adr/0004-polars-rust-lazy-streaming-and-factorial-nav-attribution.md",
+        "docs/adr/0005-snowflake-finops-guardrails-and-zero-trust-rsa2048-rbac.md",
+        "docs/adr/0006-dual-warehouse-duckdb-zerolock-and-snowflake-adapter.md",
+        "docs/adr/0007-unified-web-control-plane-and-zerolock-sql-workbench.md",
+        "docs/adr/0008-executive-financial-console-shadcn-powerbi-and-honest-zero.md",
+        "docs/adr/0009-docker-compose-360-multi-surface-observability-topology.md",
     ]
     for rel_path in adrs:
         path = REPO_ROOT / rel_path
@@ -211,6 +216,11 @@ def test_living_adrs_and_runbooks_integrity() -> None:
         "docs/runbooks/02-declarative-gx-invariants-and-circuit-breaker-triage.md",
         "docs/runbooks/03-s3-quarantine-forensics-and-parquet-recovery.md",
         "docs/runbooks/04-polars-nav-break-triage-and-factorial-attribution.md",
+        "docs/runbooks/05-snowflake-finops-circuit-breaker-and-rsa2048-key-rotation.md",
+        "docs/runbooks/06-dual-warehouse-operations-and-zerolock-sql-workbench.md",
+        "docs/runbooks/07-web-api-bridge-and-sql-workbench-operations.md",
+        "docs/runbooks/08-executive-console-360-triage-and-ui-verification.md",
+        "docs/runbooks/09-docker-compose-360-deployment-and-container-troubleshooting.md",
     ]
     for rel_path in runbooks:
         path = REPO_ROOT / rel_path
@@ -220,6 +230,16 @@ def test_living_adrs_and_runbooks_integrity() -> None:
         assert "```mermaid" in text, f"[CRITICAL] Missing Mermaid diagram in {rel_path}"
         assert "| :--- |" in text, f"[CRITICAL] Missing Markdown table in {rel_path}"
 
+    docker_files = ("docker-compose.yml", "docker/Dockerfile.console", "docker/Dockerfile.sql-ui")
+    for docker_rel in docker_files:
+        d_path = REPO_ROOT / docker_rel
+        assert d_path.is_file(), f"[CRITICAL] Missing Docker artifact: {docker_rel}"
+        assert len(d_path.read_text(encoding="utf-8").splitlines()) <= MAX_STANDARD_LOC
 
+    readme_path = REPO_ROOT / "README.md"
+    assert readme_path.is_file(), "[CRITICAL] Missing root README.md"
+    readme_text = readme_path.read_text(encoding="utf-8")
+    assert len(readme_text.splitlines()) >= 240, "[CRITICAL] README.md < 240 LOC"
+    assert "Financial-BigData-Polars-and-Contracts" in readme_text
 
 

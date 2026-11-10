@@ -1,0 +1,33 @@
+# Institutional Zero-Lock Read-Only SQL Workbench (:4213) Container
+# Base: Python 3.12 Slim Bookworm for DuckDB / Snowflake Analytical Inspection
+FROM python:3.12-slim-bookworm
+
+LABEL maintainer="Darwin Miguel Abarca Vargas" \
+      org.opencontainers.image.title="asset-pipe-sql-ui" \
+      org.opencontainers.image.description="Asset-Pipe Zero-Lock Read-Only Warehouse SQL Workbench (:4213)"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    SQL_UI_PORT=4213 \
+    WAREHOUSE_ENGINE=duckdb \
+    DUCKDB_PATH=/app/data/asset_pipe.duckdb
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+    "polars>=1.12.0" \
+    "pyarrow>=18.0.0" \
+    "pydantic>=2.9.0" \
+    "duckdb>=1.1.2" \
+    "boto3>=1.35.0" \
+    "cryptography>=43.0.0" \
+    "snowflake-connector-python>=3.12.0"
+
+COPY src/ ./src/
+COPY sql/ ./sql/
+
+RUN mkdir -p /app/data
+
+EXPOSE 4213
+
+CMD ["python3", "-m", "src.interfaces.web.sql_workbench_server"]

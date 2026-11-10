@@ -1,0 +1,44 @@
+# Institutional Executive Console (:3000) & Polars Rust Bridge Container
+# Base: Debian Bookworm Slim with Node.js 22 LTS + Python 3.11/3.12 Binary Wheels
+FROM node:22-bookworm-slim
+
+LABEL maintainer="Darwin Miguel Abarca Vargas" \
+      org.opencontainers.image.title="asset-pipe-console" \
+      org.opencontainers.image.description="Asset-Pipe Executive Financial Console (:3000) and Polars Rust Reconciliation Bridge"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHON_BIN=python3 \
+    PORT=3000 \
+    NODE_ENV=production
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml package.json package-lock.json tsconfig.json ./
+
+RUN pip3 install --no-cache-dir --break-system-packages \
+    "polars>=1.12.0" \
+    "pyarrow>=18.0.0" \
+    "pydantic>=2.9.0" \
+    "duckdb>=1.1.2" \
+    "boto3>=1.35.0" \
+    "cryptography>=43.0.0" \
+    "snowflake-connector-python>=3.12.0" \
+    && npm install --no-audit --no-fund
+
+COPY src/ ./src/
+COPY sql/ ./sql/
+COPY .env.example ./.env.example
+
+RUN mkdir -p /app/data/s3_lake
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

@@ -1,0 +1,68 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: asset-pipe-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-admin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-assetpipe2026}
+    volumes:
+      - ./.minio_data:/data
+    networks:
+      - asset-pipe-net
+    restart: unless-stopped
+
+  asset-pipe-console:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.console
+    container_name: asset-pipe-console
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      PYTHON_BIN: "python3"
+      S3_ENDPOINT_URL: "http://minio:9000"
+      S3_PUBLIC_CONSOLE_URL: "http://localhost:9001"
+      SQL_WORKBENCH_PUBLIC_URL: "http://localhost:4213"
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-admin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-assetpipe2026}
+      S3_BUCKET_LANDING: "landing"
+      S3_BUCKET_VALIDATED: "validated-parquet"
+      S3_BUCKET_QUARANTINE: "quarantine"
+      WAREHOUSE_ENGINE: ${WAREHOUSE_ENGINE:-duckdb}
+      DUCKDB_PATH: "/app/data/asset_pipe.duckdb"
+      ASSET_PIPE_LAKE_DIR: "/app/data/s3_lake"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - minio
+    networks:
+      - asset-pipe-net
+    restart: unless-stopped
+
+  asset-pipe-sql-ui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.sql-ui
+    container_name: asset-pipe-sql-ui
+    ports:
+      - "4213:4213"
+    environment:
+      SQL_UI_PORT: "4213"
+      WAREHOUSE_ENGINE: ${WAREHOUSE_ENGINE:-duckdb}
+      DUCKDB_PATH: "/app/data/asset_pipe.duckdb"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - asset-pipe-console
+    networks:
+      - asset-pipe-net
+    restart: unless-stopped
+
+networks:
+  asset-pipe-net:
+    driver: bridge
