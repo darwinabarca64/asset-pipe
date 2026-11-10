@@ -1,0 +1,27 @@
+# [OPSEC] Local audit artifacts and author secrets
+hardware_audit_report.json
+.wslconfig.recommended
+MANUAL-MAESTRO-DARWIN-ES.md
+.antigravity/
+.env
+
+# [DATA] Local databases and storage volumes
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+data/
+.minio_data/
+
+# [RUNTIME] Environments, dependencies and caches
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+*.pyc
+*.pem
+*.key
+.DS_Store
+Thumbs.db
